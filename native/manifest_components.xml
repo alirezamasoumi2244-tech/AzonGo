@@ -1,0 +1,10 @@
+        <receiver android:name="ir.azango.app.AzanReceiver" android:exported="false" />
+        <receiver android:name="ir.azango.app.BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <service android:name="ir.azango.app.AzanService" android:exported="false" android:foregroundServiceType="mediaPlayback" />

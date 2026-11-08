@@ -1,0 +1,6 @@
+{
+  "appId": "ir.azango.app",
+  "appName": "AzanGo",
+  "webDir": "www",
+  "android": { "allowMixedContent": false }
+}

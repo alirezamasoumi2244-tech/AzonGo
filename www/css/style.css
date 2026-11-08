@@ -1,0 +1,45 @@
+:root{--g1:#0b3d2e;--g2:#0f6b4f;--g3:#e3f1ea;--g4:#f6fbf8;--ink:#12261e;--mut:#5b7268;--gold:#c9a227;--bad:#a33;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--g3:#17382d;--g4:#0e2119;--ink:#eaf5ef;--mut:#9fb8ad}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--g4);color:var(--ink);
+  font-family:"Vazirmatn","Noto Naskh Arabic","Noto Sans Arabic",Tahoma,sans-serif;font-size:20px;line-height:1.6}
+#app{padding:calc(var(--safe-t) + 12px) 14px calc(96px + var(--safe-b));max-width:560px;margin:auto}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+.hero{background:linear-gradient(160deg,var(--g1),var(--g2));color:#fff;border-radius:26px;padding:22px 16px;text-align:center;
+  background-image:radial-gradient(circle at 15% 20%,rgba(255,255,255,.08) 0 22px,transparent 23px),linear-gradient(160deg,var(--g1),var(--g2))}
+.city{font-size:22px;opacity:.95}
+.clock{font-size:56px;font-weight:800;letter-spacing:1px;margin:4px 0;direction:ltr;font-variant-numeric:tabular-nums}
+.date{font-size:22px}.date.sub{opacity:.85;font-size:19px}
+.next{margin:14px 0;background:var(--g3);border:2px solid var(--g2);border-radius:22px;padding:16px;text-align:center}
+.next .nm{font-size:40px;font-weight:800;color:var(--g2)}.next .at{font-size:24px}
+.next .cd{font-size:44px;font-weight:800;direction:ltr;font-variant-numeric:tabular-nums;margin-top:6px}
+.lbl{color:var(--mut)}.lbl.small{font-size:16px}
+.list{background:var(--g3);border-radius:20px;padding:6px 14px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid rgba(15,107,79,.18);font-size:22px}
+.row:last-child{border:0}.row b{font-size:24px;font-variant-numeric:tabular-nums}
+.row.hl{background:var(--g2);color:#fff;border-radius:14px;padding-inline:12px;margin:3px -8px;border:0}
+.list.big .row{font-size:26px;padding:16px 4px}.row.dim{opacity:.8}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:8px}.top h1{font-size:28px;margin:6px 0;color:var(--g2)}
+h2{font-size:22px;margin:20px 4px 8px;color:var(--g2)}
+.back{background:var(--g2);color:#fff;border-radius:14px;padding:10px 16px;font-size:18px}
+.hint{color:var(--mut);font-size:17px;margin:8px 4px}
+.menu{display:flex;flex-direction:column;gap:10px}
+.mi{display:flex;align-items:center;gap:12px;background:var(--g3);border-radius:18px;padding:16px;text-align:right;width:100%;min-height:68px}
+.mi i{font-style:normal;font-size:30px}.mi span{flex:1;display:flex;flex-direction:column}
+.mi b{font-size:22px}.mi small{color:var(--mut);font-size:16px}.mi em{font-style:normal;font-size:28px;color:var(--g2)}
+.mi.sel{outline:3px solid var(--g2)}
+.sw{width:76px;height:42px;border-radius:21px;background:#9aa8a1;position:relative;flex:none;transition:.2s}
+.sw span{position:absolute;top:4px;right:4px;width:34px;height:34px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:var(--g2)}.sw.on span{right:38px}
+.form{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+label{display:flex;flex-direction:column;gap:6px;font-size:19px}
+input,select{font:inherit;padding:12px;border-radius:14px;border:2px solid var(--g2);background:var(--g4);color:var(--ink)}
+input[type=range]{padding:0;accent-color:var(--g2);height:44px}
+.btn{background:var(--g2);color:#fff;border-radius:16px;padding:14px 18px;font-size:20px;min-height:56px}
+.btn.alt{background:var(--g3);color:var(--g2);border:2px solid var(--g2)}.btn.danger{background:var(--bad);color:#fff}
+.btn.wide{width:100%;margin-top:10px}.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.btns .btn{flex:1 1 40%}
+.card{background:var(--g3);border-radius:20px;padding:14px 16px;margin:10px 0}.card.sel{outline:3px solid var(--g2)}.card h3{margin:0 0 4px}
+#nav{position:fixed;inset:auto 0 0 0;display:flex;background:var(--g1);padding:6px 6px calc(6px + var(--safe-b));gap:6px}
+#nav button{flex:1;background:transparent;color:#cfe6dc;border-radius:16px;padding:8px 0;font-size:17px;display:flex;flex-direction:column;align-items:center;min-height:62px}
+#nav button i{font-style:normal;font-size:26px}#nav button.on{background:var(--g2);color:#fff}
