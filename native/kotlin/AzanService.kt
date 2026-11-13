@@ -60,7 +60,7 @@ class AzanService : Service() {
         } catch (e: Exception) { Log.e("AzanGo", "startForeground failed", e) }
         val cfg = AzanCore.config(this)
         val path = if (isTest) intent?.getStringExtra("path") ?: "" else cfg.optString("path", "")
-        vol = (if (isTest) intent?.getFloatExtra("volume", 0.8f) ?: 0.8f else cfg.optDouble("volume", 0.8).toFloat()).coerceIn(0.05f, 1f)
+        vol = (if (isTest) intent?.getFloatExtra("volume", 1f) ?: 1f else cfg.optDouble("volume", 1.0).toFloat()).coerceIn(0.05f, 1f)
         play(path)
         return START_NOT_STICKY
     }

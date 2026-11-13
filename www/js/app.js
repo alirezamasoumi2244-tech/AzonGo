@@ -35,7 +35,7 @@
   const DEF = {
     cityId: 'tehran', custom: null,
     enabled: { fajr: true, dhuhr: true, asr: false, maghrib: true, isha: false },
-    volume: 0.8, pre: 0, offsets: {}, muezzinId: 'afasy', hijriOffset: 0,
+    volume: 1, pre: 0, offsets: {}, muezzinId: 'afasy', hijriOffset: 0,
     muezzins: [{ id: 'afasy', name: 'اذان پیش‌فرض', path: '', file: '' }],
     setupDone: false
   };
