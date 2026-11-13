@@ -3,9 +3,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 npm install
-pip3 install --user --quiet pillow 2>/dev/null || true
 [ -d android ] || npx cap add android
 python3 tools/patch_android.py
 npx cap sync android
+python3 tools/patch_android.py
 echo
 echo "Done. Open the 'android' folder in Android Studio, or run:  ./build-apk.sh"
