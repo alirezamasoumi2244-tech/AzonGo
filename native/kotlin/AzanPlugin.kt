@@ -153,4 +153,14 @@ class AzanPlugin : Plugin() {
         activity.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName)))
         call.resolve()
     }
+
+    @PluginMethod
+    fun openUrl(call: PluginCall) {
+        try {
+            val url = call.getString("url") ?: run { call.reject("url required"); return }
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            activity.startActivity(intent)
+            call.resolve()
+        } catch (e: Exception) { call.reject(e.message ?: "openUrl failed") }
+    }
 }

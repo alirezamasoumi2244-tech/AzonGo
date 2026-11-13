@@ -110,6 +110,11 @@
     appSettings: async () => ({}),
     fullScreenSettings: async () => ({}),
     keepAwake: async () => ({}),
+    openUrl: async (arg) => {
+      const url = typeof arg === 'string' ? arg : (arg && arg.url);
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      return {};
+    },
     state: async () => ({ playing: !!audio || Date.now() < chimeUntil, muted, name: curName, startedAt }),
     mute: async on => {
       muted = !!on;

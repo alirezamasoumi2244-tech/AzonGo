@@ -34,9 +34,10 @@
   const SHORT = { fajr: 'صبح', sunrise: 'طلوع آفتاب', dhuhr: 'ظهر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشا' };
   const DEF = {
     cityId: 'tehran', custom: null,
-    enabled: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
-    volume: 0.8, pre: 15, offsets: {}, muezzinId: 'afasy', hijriOffset: 0,
-    muezzins: [{ id: 'afasy', name: 'اذان پیش‌فرض', path: '', file: '' }]
+    enabled: { fajr: true, dhuhr: true, asr: false, maghrib: true, isha: false },
+    volume: 0.8, pre: 0, offsets: {}, muezzinId: 'afasy', hijriOffset: 0,
+    muezzins: [{ id: 'afasy', name: 'اذان پیش‌فرض', path: '', file: '' }],
+    setupDone: false
   };
   const fa = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
   const p2 = n => String(n).padStart(2, '0');
@@ -46,9 +47,12 @@
   let S = load();
   function load() {
     try {
-      const o = JSON.parse(localStorage.getItem('azango') || '{}');
+      const raw = localStorage.getItem('azango');
+      const o = JSON.parse(raw || '{}');
       const m = Object.assign({}, DEF, o, { enabled: Object.assign({}, DEF.enabled, o.enabled || {}), offsets: Object.assign({}, o.offsets || {}) });
       m.muezzins = (m.muezzins || DEF.muezzins).map(x => (x.id === 'afasy' && !x.path) ? Object.assign({}, x, { name: 'اذان پیش‌فرض' }) : x);
+      // کاربران قبلی که قبلاً از برنامه استفاده کرده‌اند، دوباره وارد راه‌اندازی نشوند
+      if (raw && o.setupDone === undefined) m.setupDone = true;
       return m;
     } catch (e) { return JSON.parse(JSON.stringify(DEF)); }
   }
@@ -206,16 +210,57 @@
     app.innerHTML = header('درباره برنامه', 'settings') +
       '<section class="card"><h3>اذان‌گو (AzanGo)</h3><p>نسخه ۱.۰ — اوقات شرعی بر اساس مختصات شهر و روش مؤسسه ژئوفیزیک دانشگاه تهران (صبح ۱۷٫۷°، مغرب ۴٫۵°، عشا ۱۴°).</p>' +
       '<p>اوقات را با تقویم رسمی شهر خود مقایسه کنید؛ ممکن است تا چند دقیقه اختلاف دیده شود. در صورت نیاز، موقعیت دستی را تنظیم کنید.</p>' +
-      '<div class="form"><label>اصلاح تاریخ قمری<select id="hj">' + [-2, -1, 0, 1, 2].map(v => '<option value="' + v + '"' + (S.hijriOffset === v ? ' selected' : '') + '>' + (v > 0 ? '+' : '') + fa(v) + ' روز</option>').join('') + '</select></label></div></section>';
+      '<div class="form"><label>اصلاح تاریخ قمری<select id="hj">' + [-2, -1, 0, 1, 2].map(v => '<option value="' + v + '"' + (S.hijriOffset === v ? ' selected' : '') + '>' + (v > 0 ? '+' : '') + fa(v) + ' روز</option>').join('') + '</select></label></div></section>' +
+      '<section class="card"><h3>ما را دنبال کنید</h3>' +
+      '<p class="hint" style="margin:0 0 10px">با دنبال کردن صفحهٔ ما در گیت‌هاب، از نسخه‌های جدید زودتر باخبر می‌شوید و با ستاره‌دادن به پروژه، به بهتر شدن اذان‌گو کمک می‌کنید ⭐</p>' +
+      '<button class="btn wide" id="ghOpen" type="button">⭐ دنبال کردن در گیت‌هاب — حمایت از اذان‌گو</button></section>';
   }
-  const R = { home: renderHome, times: renderTimes, settings: renderSettings, city: renderCity, azan: renderAzan, muezzin: renderMuezzin, notif: renderNotif, about: renderAbout };
+  function renderSetup() {
+    const selected = place();
+    app.innerHTML =
+      '<section class="hero setup-hero"><div class="pill">' + ic('bell') + ' اذان‌گو</div>' +
+      '<h1 class="setup-title">خوش آمدید</h1>' +
+      '<p class="setup-desc">برای شروع، شهر خود را انتخاب کنید و دسترسی‌های لازم را بدهید تا اذان در زمان مناسب پخش شود.</p></section>' +
+      '<section class="card setup-card"><h3>' + ic('pin') + ' انتخاب شهر</h3>' +
+      '<input id="cSearch" type="search" placeholder="جستجوی شهر یا استان" autocomplete="off">' +
+      '<div class="setup-city-list" id="cList">' +
+      CITIES.slice().sort((p, q) => p.name.localeCompare(q.name, 'fa')).map(x =>
+        '<button class="mi city' + (!S.custom && S.cityId === x.id ? ' sel' : '') + '" data-city="' + x.id + '" data-search="' + x.name + ' ' + x.prov + '">' +
+        '<span><b>' + x.name + '</b><small>استان ' + x.prov + '</small></span><em>' + (!S.custom && S.cityId === x.id ? ic('check') : '') + '</em></button>'
+      ).join('') + '</div>' +
+      '<p class="hint setup-sel">شهر فعلی: <b>' + esc(selected.name) + '</b></p></section>' +
+      '<section class="card setup-card"><h3>' + ic('bell') + ' دسترسی‌ها</h3>' +
+      '<p class="hint">برای پخش اذان و نمایش اعلان، اجازه اعلان‌ها لازم است. در گوشی‌های سامسونگ، شیائومی و هواوی بعداً «شروع خودکار» و «بدون محدودیت باتری» را هم فعال کنید.</p>' +
+      '<button class="btn" id="nAsk">' + ic('bell') + ' اجازه نمایش اعلان</button>' +
+      '<button class="btn alt" id="nBat">خارج کردن از محدودیت باتری</button>' +
+      '<div id="st" class="hint">وضعیت دسترسی بعد از درخواست نمایش داده می‌شود.</div></section>' +
+      '<button class="btn wide setup-finish" id="setupDone">شروع استفاده از اذان‌گو</button>' +
+      '<p class="hint" style="text-align:center;margin-top:8px">پیش‌فرض: اذان صبح، ظهر و مغرب روشن · یادآوری قبل از اذان خاموش</p>';
+    // به‌روزرسانی وضعیت دسترسی اگر روی گوشی باشیم
+    if (Native.available()) {
+      Native.status().then(s => {
+        const el = document.getElementById('st'); if (!el || !s) return;
+        el.innerHTML = 'اعلان: <b>' + (s.notifications ? 'فعال ✓' : 'غیرفعال') + '</b> · بدون محدودیت باتری: <b>' + (s.ignoringBattery ? 'بله ✓' : 'خیر') + '</b>';
+      });
+    }
+  }
+  const R = { home: renderHome, times: renderTimes, settings: renderSettings, city: renderCity, azan: renderAzan, muezzin: renderMuezzin, notif: renderNotif, about: renderAbout, setup: renderSetup };
   function render() {
     (R[page] || renderHome)();
-    const top = ['home', 'times', 'settings'].includes(page) ? page : 'settings';
-    nav.innerHTML = NAV.map(([id, icn, t]) => '<button class="' + (id === top ? 'on' : '') + '" onclick="go(\'' + id + '\')"><i>' + icn + '</i>' + t + '</button>').join('');
+    if (page === 'setup') {
+      nav.innerHTML = '';
+      nav.style.display = 'none';
+      document.getElementById('app').style.paddingBottom = '24px';
+    } else {
+      nav.style.display = '';
+      document.getElementById('app').style.paddingBottom = '';
+      const top = ['home', 'times', 'settings'].includes(page) ? page : 'settings';
+      nav.innerHTML = NAV.map(([id, icn, t]) => '<button class="' + (id === top ? 'on' : '') + '" onclick="go(\'' + id + '\')"><i>' + icn + '</i>' + t + '</button>').join('');
+    }
   }
 
-  /* ---------- live tick ---------- */
+  /* ---------- live tick (GPU-friendly: minimal style writes) ---------- */
+  let _ringSec = -1;
   function tick() {
     const p = place(), c = cityNow(p.tz);
     const key = c.getUTCFullYear() + '-' + c.getUTCMonth() + '-' + c.getUTCDate();
@@ -226,13 +271,24 @@
       if (ck) ck.textContent = fa(p2(c.getUTCHours()) + ':' + p2(c.getUTCMinutes()) + ':' + p2(c.getUTCSeconds()));
       const nx = nextPrayer(p), cd = document.getElementById('cd');
       if (nx && cd) {
-        let s = Math.max(0, Math.floor((nx.ms - Date.now()) / 1000));
+        const now = Date.now();
+        let s = Math.max(0, Math.floor((nx.ms - now) / 1000));
         cd.textContent = fa(p2(Math.floor(s / 3600)) + ':' + p2(Math.floor(s % 3600 / 60)) + ':' + p2(s % 60));
-        const rp = document.getElementById('rp'), pv = prevMs(p);
-        if (rp && rp.style) { const fr = pv ? Math.min(1, Math.max(0, (Date.now() - pv) / (nx.ms - pv))) : 0; rp.style.strokeDashoffset = String(339.3 * (1 - fr)); }
+        // حلقه پیشرفت فقط هر ۵ ثانیه — کاهش فشار GPU
+        if (s % 5 === 0 && s !== _ringSec) {
+          _ringSec = s;
+          const rp = document.getElementById('rp'), pv = prevMs(p);
+          if (rp) {
+            const fr = pv ? Math.min(1, Math.max(0, (now - pv) / (nx.ms - pv))) : 0;
+            rp.style.strokeDashoffset = String(339.3 * (1 - fr));
+          }
+        }
         const n = document.getElementById('nxName'), a = document.getElementById('nxAt');
         if (n && n.textContent !== SHORT[nx.key]) renderHome();
-        else if (a) a.textContent = 'ساعت ' + hm(nx.min);
+        else if (a) {
+          const t = 'ساعت ' + hm(nx.min);
+          if (a.textContent !== t) a.textContent = t;
+        }
       }
     }
   }
@@ -287,7 +343,16 @@
     const el = e.target.closest('button'); if (!el) return;
     const msg = id => document.getElementById(id);
     if (el.dataset.sw) { S.enabled[el.dataset.sw] = !S.enabled[el.dataset.sw]; save(); return renderAzan(); }
-    if (el.dataset.city) { S.cityId = el.dataset.city; S.custom = null; save(); return renderCity(); }
+    if (el.dataset.city) {
+      S.cityId = el.dataset.city; S.custom = null; save(false);
+      if (page === 'setup') return renderSetup();
+      return renderCity();
+    }
+    if (el.id === 'setupDone') {
+      S.setupDone = true; save();
+      go('home');
+      return;
+    }
     if (el.id === 'cSave') {
       const lat = parseFloat(msg('cLat').value), lng = parseFloat(msg('cLng').value), tz = parseFloat(msg('cTz').value), name = msg('cName').value.trim() || 'موقعیت من';
       if (!(lat >= -66 && lat <= 66) || !(lng >= -180 && lng <= 180) || !(tz >= -12 && tz <= 14)) { msg('cMsg').textContent = 'مقادیر واردشده معتبر نیست.'; return; }
@@ -310,9 +375,20 @@
     if (el.id === 'ovMute') { await Native.mute(!ovMuted); setTimeout(pollAzan, 300); }
     if (el.id === 'ovClose') closeAzan();
     if (el.id === 'nFs') Native.fullScreenSettings();
-    if (el.id === 'nAsk') { await Native.askNotifications(); setTimeout(renderNotif, 800); }
-    if (el.id === 'nBat') Native.batterySettings();
+    if (el.id === 'nAsk') {
+      await Native.askNotifications();
+      setTimeout(() => { if (page === 'setup') renderSetup(); else if (page === 'notif') renderNotif(); }, 800);
+    }
+    if (el.id === 'nBat') {
+      Native.batterySettings();
+      setTimeout(() => { if (page === 'setup') renderSetup(); else if (page === 'notif') renderNotif(); }, 1200);
+    }
     if (el.id === 'nApp') Native.appSettings();
+    if (el.id === 'ghOpen') {
+      const url = 'https://github.com/alirezamasoumi2244-tech';
+      if (Native.available()) Native.openUrl(url);
+      else window.open(url, '_blank', 'noopener,noreferrer');
+    }
   });
   document.addEventListener('input', e => {
     if (e.target.id === 'cSearch') { const q = e.target.value.trim(); document.querySelectorAll('#cList .mi').forEach(b => { b.style.display = (!q || b.dataset.search.indexOf(q) >= 0) ? '' : 'none'; }); }
@@ -325,8 +401,10 @@
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { schedule(); pollAzan(); if (page === 'home') renderHome(); } });
 
-  render(); schedule();
+  // اولین ورود: راه‌اندازی شهر و دسترسی‌ها
+  if (!S.setupDone) page = 'setup';
+  render();
+  if (S.setupDone) schedule();
   setInterval(tick, 1000);
   setInterval(pollAzan, 1000);
-  if (Native.available()) Native.askNotifications();
 })();
