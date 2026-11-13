@@ -65,48 +65,55 @@ if os.path.exists(sp):
     s = re.sub(r'(<string name="title_activity_main">)[^<]*(</string>)', r"\1اذان‌گو\2", s)
     open(sp, "w", encoding="utf-8").write(s)
 
-# 5) App icon — copy prebuilt mipmaps from native/res (no Pillow required)
+# 5) App icon — copy prebuilt mipmaps only (never write colors into colors.xml;
+# Capacitor already ships values/ic_launcher_background.xml)
 res_root = os.path.join(A, "app/src/main/res")
 icon_copied = 0
-for name in os.listdir(os.path.join(ROOT, "native/res")):
-    src_dir = os.path.join(ROOT, "native/res", name)
-    if not os.path.isdir(src_dir):
-        continue
-    if not (name.startswith("mipmap-") or name == "values"):
-        continue
-    # skip raw audio folder
-    if name == "raw":
+native_res = os.path.join(ROOT, "native/res")
+for name in os.listdir(native_res):
+    src_dir = os.path.join(native_res, name)
+    if not os.path.isdir(src_dir) or not name.startswith("mipmap-"):
         continue
     dst_dir = os.path.join(res_root, name)
     os.makedirs(dst_dir, exist_ok=True)
     for f in os.listdir(src_dir):
         if f.endswith((".png", ".xml", ".webp")):
-            # values: merge color into colors.xml if needed
-            if name == "values" and f.endswith(".xml"):
-                src_txt = open(os.path.join(src_dir, f), encoding="utf-8").read()
-                if "ic_launcher_background" in src_txt:
-                    colors = os.path.join(dst_dir, "colors.xml")
-                    if os.path.isfile(colors):
-                        c = open(colors, encoding="utf-8").read()
-                        if "ic_launcher_background" not in c:
-                            c = c.replace("</resources>", '    <color name="ic_launcher_background">#05221a</color>\n</resources>')
-                            open(colors, "w", encoding="utf-8").write(c)
-                    else:
-                        open(colors, "w", encoding="utf-8").write(
-                            '<?xml version="1.0" encoding="utf-8"?>\n'
-                            '<resources>\n'
-                            '    <color name="ic_launcher_background">#05221a</color>\n'
-                            '</resources>\n'
-                        )
-                    icon_copied += 1
-                continue
             shutil.copy2(os.path.join(src_dir, f), os.path.join(dst_dir, f))
             icon_copied += 1
 
-# Also remove Capacitor default webp icons if present (PNG takes over, but clean up)
+# Update Capacitor's existing launcher background color (avoid duplicate resource)
+bg_candidates = [
+    os.path.join(res_root, "values", "ic_launcher_background.xml"),
+    os.path.join(res_root, "values", "colors.xml"),
+]
+for bg in bg_candidates:
+    if not os.path.isfile(bg):
+        continue
+    txt = open(bg, encoding="utf-8").read()
+    if "ic_launcher_background" in txt:
+        txt2 = re.sub(
+            r'(<color\s+name="ic_launcher_background">)[^<]*(</color>)',
+            r"\1#05221a\2",
+            txt,
+        )
+        if txt2 != txt:
+            open(bg, "w", encoding="utf-8").write(txt2)
+            print("Updated ic_launcher_background color in", os.path.basename(bg))
+        break
+else:
+    # only create if Capacitor did not provide one
+    values = os.path.join(res_root, "values")
+    os.makedirs(values, exist_ok=True)
+    open(os.path.join(values, "ic_launcher_background.xml"), "w", encoding="utf-8").write(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<resources>\n'
+        '    <color name="ic_launcher_background">#05221a</color>\n'
+        '</resources>\n'
+    )
+
+# Remove Capacitor default webp launchers so our PNGs are used
 for folder, _, files in os.walk(res_root):
-    base = os.path.basename(folder)
-    if not base.startswith("mipmap-"):
+    if not os.path.basename(folder).startswith("mipmap-"):
         continue
     for f in files:
         if f.startswith("ic_launcher") and f.endswith(".webp"):
@@ -116,7 +123,7 @@ for folder, _, files in os.walk(res_root):
                 pass
 
 if icon_copied:
-    print("App icon applied (%d files from native/res mipmaps)" % icon_copied)
+    print("App icon applied (%d mipmap files)" % icon_copied)
 else:
     print("Warning: no prebuilt icons found under native/res/mipmap-*")
 
