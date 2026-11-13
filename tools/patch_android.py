@@ -17,6 +17,14 @@ for f in os.listdir(os.path.join(ROOT, "native/kotlin")):
         txt = open(os.path.join(ROOT, "native/kotlin", f), encoding="utf-8").read()
         txt = txt.replace("package ir.azango.app", "package " + app_id).replace("ir.azango.app.", app_id + ".")
         open(os.path.join(pkg_dir, f), "w", encoding="utf-8").write(txt)
+# built-in azan audio -> res/raw
+raw_src = os.path.join(ROOT, "native/res/raw")
+if os.path.isdir(raw_src):
+    raw_dst = os.path.join(A, "app/src/main/res/raw")
+    os.makedirs(raw_dst, exist_ok=True)
+    for f in os.listdir(raw_src):
+        shutil.copy2(os.path.join(raw_src, f), os.path.join(raw_dst, f))
+
 java_main = os.path.join(pkg_dir, "MainActivity.java")
 if os.path.exists(java_main):
     os.remove(java_main)

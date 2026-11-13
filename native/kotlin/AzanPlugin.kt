@@ -2,6 +2,7 @@ package ir.azango.app
 
 import android.Manifest
 import android.app.Activity
+import android.app.NotificationManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,6 +11,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.OpenableColumns
 import android.provider.Settings
+import android.view.WindowManager
 import androidx.activity.result.ActivityResult
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
@@ -93,7 +95,47 @@ class AzanPlugin : Plugin() {
         val pm = context.getSystemService(PowerManager::class.java)
         call.resolve(JSObject()
             .put("notifications", NotificationManagerCompat.from(context).areNotificationsEnabled())
-            .put("ignoringBattery", pm.isIgnoringBatteryOptimizations(context.packageName)))
+            .put("ignoringBattery", pm.isIgnoringBatteryOptimizations(context.packageName))
+            .put("fullScreen", canFullScreen()))
+    }
+
+    private fun canFullScreen(): Boolean =
+        if (Build.VERSION.SDK_INT >= 34) context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent() else true
+
+    /** Tells the web UI whether the azan is playing right now (it then shows the azan screen). */
+    @PluginMethod
+    fun state(call: PluginCall) {
+        call.resolve(JSObject()
+            .put("playing", AzanService.playing).put("muted", AzanService.muted)
+            .put("name", AzanService.name).put("startedAt", AzanService.startedAt))
+    }
+
+    @PluginMethod
+    fun mute(call: PluginCall) {
+        val on = call.getBoolean("on", true) ?: true
+        try { context.startService(Intent(context, AzanService::class.java).setAction(AzanService.ACTION_MUTE).putExtra("on", on)) } catch (_: Exception) {}
+        call.resolve()
+    }
+
+    /** Keeps the screen on while the azan screen shows the playing azan. */
+    @PluginMethod
+    fun keepAwake(call: PluginCall) {
+        val on = call.getBoolean("on", false) ?: false
+        activity.runOnUiThread {
+            if (on) activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            else activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        call.resolve()
+    }
+
+    @PluginMethod
+    fun fullScreenSettings(call: PluginCall) {
+        try {
+            if (Build.VERSION.SDK_INT >= 34)
+                activity.startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:" + context.packageName)))
+            else appSettings(call)
+        } catch (e: Exception) { activity.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))) }
+        call.resolve()
     }
 
     @PluginMethod
